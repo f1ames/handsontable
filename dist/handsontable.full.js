@@ -29,7 +29,7 @@
  * FROM USE OR INABILITY TO USE THIS SOFTWARE.
  * 
  * Version: 7.0.2
- * Release date: 09/04/2019 (built at 09/05/2019 18:38:55)
+ * Release date: 09/04/2019 (built at 09/05/2019 23:54:53)
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -39254,7 +39254,10 @@ function Core(rootElement, userSettings) {
 
 
   this.toHTML = function () {
-    return (0, _parseTable.instanceToHTML)(_this);
+    var tempElement = _this.rootDocument.createElement('div');
+
+    tempElement.insertAdjacentHTML('afterbegin', (0, _parseTable.instanceToHTML)(_this));
+    return tempElement.firstElementChild;
   };
 
   this.timeouts = [];
@@ -39460,11 +39463,28 @@ function instanceToHTML(instance) {
       } else {
         var cellData = data[row][column];
 
-        if ((0, _mixed.isEmpty)(cellData)) {
-          cell = '<td></td>';
-        } else {
-          TEMP_ELEM.innerText = cellData;
-          cell = "<td>".concat(TEMP_ELEM.innerHTML, "</td>");
+        var _instance$getCellMeta = instance.getCellMeta(row - (hasRowHeaders ? 1 : 0), column - (hasColumnHeaders ? 1 : 0)),
+            hidden = _instance$getCellMeta.hidden,
+            rowspan = _instance$getCellMeta.rowspan,
+            colspan = _instance$getCellMeta.colspan;
+
+        if (!hidden) {
+          var attrs = [];
+
+          if (rowspan) {
+            attrs.push("rowspan=\"".concat(rowspan, "\""));
+          }
+
+          if (colspan) {
+            attrs.push("colspan=\"".concat(colspan, "\""));
+          }
+
+          if ((0, _mixed.isEmpty)(cellData)) {
+            cell = "<td ".concat(attrs.join(' '), "></td>");
+          } else {
+            TEMP_ELEM.innerText = cellData;
+            cell = "<td ".concat(attrs.join(' '), ">").concat(TEMP_ELEM.innerHTML, "</td>");
+          }
         }
       }
 
@@ -58455,7 +58475,7 @@ Handsontable.EventManager = _eventManager.default;
 Handsontable._getListenersCounter = _eventManager.getListenersCounter; // For MemoryLeak tests
 
 Handsontable.packageName = 'handsontable';
-Handsontable.buildDate = "09/05/2019 18:38:55";
+Handsontable.buildDate = "09/05/2019 23:54:53";
 Handsontable.version = "7.0.2"; // Export Hooks singleton
 
 Handsontable.hooks = _pluginHooks.default.getSingleton(); // TODO: Remove this exports after rewrite tests about this module
@@ -83885,8 +83905,13 @@ function (_BasePlugin) {
     value: function onAfterGetCellMeta(row, col, cellProperties) {
       var mergeParent = this.mergedCellsCollection.get(row, col);
 
-      if (mergeParent && (mergeParent.row !== row || mergeParent.col !== col)) {
-        cellProperties.copyable = false;
+      if (mergeParent) {
+        if (mergeParent.row !== row || mergeParent.col !== col) {
+          cellProperties.copyable = false;
+        } else {
+          cellProperties.rowspan = mergeParent.rowspan;
+          cellProperties.colspan = mergeParent.colspan;
+        }
       }
     }
     /**
